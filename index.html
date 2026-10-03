@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuoteFort — Quote &amp; Profit System</title>
+<!--
+  QuoteFort v1.0.0 — The Quote & Profit System for Service Businesses
+  Single-file, offline, no dependencies. Data stays in this browser (localStorage).
+  License: single-business use. See LICENSE.txt in your download.
+-->
+<style>
+:root{
+  --ink:#0f172a; --ink-2:#334155; --ink-3:#64748b;
+  --accent:#0f766e; --accent-dark:#115e59; --accent-soft:#ccfbf1; --accent-softer:#f0fdfa;
+  --paper:#f6f8f8; --card:#ffffff; --line:#e2e8f0; --line-2:#cbd5e1;
+  --good:#15803d; --good-soft:#dcfce7; --warn:#b45309; --warn-soft:#fef3c7;
+  --bad:#b91c1c; --bad-soft:#fee2e2; --info:#1d4ed8; --info-soft:#dbeafe;
+  --radius:12px; --shadow:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+a{color:var(--accent-dark)}
+
+/* ---------- Top bar ---------- */
+.topbar{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:1080px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:18px;height:58px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.2px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.brand svg{flex:none}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{padding:8px 12px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:600;font-size:13.5px;white-space:nowrap}
+.nav a:hover{background:var(--accent-softer);color:var(--accent-dark)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent-dark)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.save-pill{font-size:11.5px;color:var(--ink-3);background:#f1f5f9;border:1px solid var(--line);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.save-pill.err{color:var(--bad);background:var(--bad-soft);border-color:#fecaca}
+
+/* ---------- Layout ---------- */
+main{max-width:1080px;margin:0 auto;padding:26px 20px 70px}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.page-head h1{font-size:22px;letter-spacing:-.3px}
+.page-head .sub{color:var(--ink-3);font-size:13.5px;margin-top:3px}
+.grid{display:grid;gap:16px}
+.cards-4{grid-template-columns:repeat(4,1fr)}
+.cards-2{grid-template-columns:1fr 340px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card h3{font-size:14px;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.muted{color:var(--ink-3)} .small{font-size:12.5px}
+.stat{padding:16px 18px}
+.stat .label{font-size:12px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px}
+.stat .value{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-top:4px}
+.stat .hint{font-size:12px;color:var(--ink-3);margin-top:2px}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;border-radius:9px;font-weight:700;font-size:13.5px;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:filter .12s, background .12s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-dark)}
+.btn-ghost{background:#fff;color:var(--ink-2);border-color:var(--line-2)}
+.btn-ghost:hover{background:#f8fafc}
+.btn-danger{background:#fff;color:var(--bad);border-color:#fecaca}
+.btn-danger:hover{background:var(--bad-soft)}
+.btn-sm{padding:5px 11px;font-size:12.5px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{flex:none}
+
+/* ---------- Forms ---------- */
+label.f{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+label.f .opt{color:var(--ink-3);font-weight:500}
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--line-2);border-radius:9px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input.invalid,select.invalid,textarea.invalid{border-color:var(--bad);background:#fffafa}
+textarea{resize:vertical;min-height:70px}
+.field-row{display:grid;gap:12px}
+.fr-2{grid-template-columns:1fr 1fr}
+.fr-3{grid-template-columns:1fr 1fr 1fr}
+.form-nosave{display:none}
+
+/* ---------- Tables ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafcfc}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;padding:2.5px 9px;border-radius:99px;font-size:11.5px;font-weight:700}
+.chip.draft{background:#f1f5f9;color:#475569}
+.chip.sent{background:var(--info-soft);color:var(--info)}
+.chip.won{background:var(--good-soft);color:var(--good)}
+.chip.lost{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+
+/* ---------- Empty states ---------- */
+.empty{text-align:center;padding:44px 24px;color:var(--ink-3)}
+.empty .ico{width:44px;height:44px;border-radius:12px;background:var(--accent-softer);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+.empty h3{color:var(--ink);font-size:16px;margin-bottom:5px}
+.empty p{font-size:13.5px;max-width:420px;margin:0 auto 16px}
+
+/* ---------- Quote form ---------- */
+.qform{display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
+.items-head{display:grid;grid-template-columns:1fr 78px 92px 104px 104px 78px 34px;gap:8px;padding:0 2px 8px}
+.items-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3)}
+.item-row{display:grid;grid-template-columns:1fr 78px 92px 104px 104px 78px 34px;gap:8px;align-items:center;padding:8px 2px;border-top:1px solid var(--line)}
+.item-row input,.item-row select{padding:7px 9px;font-size:13.5px}
+.item-row .del{border:none;background:none;color:var(--ink-3);cursor:pointer;font-size:17px;height:32px;border-radius:8px}
+.item-row .del:hover{background:var(--bad-soft);color:var(--bad)}
+.item-add{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.totals-panel{position:sticky;top:74px}
+.tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.tot-row .num{font-variant-numeric:tabular-nums}
+.tot-row.big{border-top:1px solid var(--line);margin-top:6px;padding-top:11px;font-size:19px;font-weight:800}
+.tot-row.big .num{color:var(--accent-dark)}
+.margin-box{margin-top:12px;border-radius:10px;padding:12px 14px;font-size:13.5px}
+.margin-box.ok{background:var(--good-soft);color:var(--good)}
+.margin-box.bad{background:var(--bad-soft);color:var(--bad)}
+.margin-box .m-line{display:flex;justify-content:space-between;font-weight:700}
+.margin-box .m-tip{margin-top:6px;font-size:12.5px;line-height:1.45;font-weight:600}
+.tot-note{margin-top:10px;font-size:12px;color:var(--ink-3)}
+
+/* ---------- Alerts / banners ---------- */
+.banner{border-radius:10px;padding:11px 14px;font-size:13.5px;margin-bottom:16px;display:flex;gap:9px;align-items:flex-start}
+.banner.warn{background:var(--warn-soft);color:#92400e;border:1px solid #fde68a}
+.banner.err{background:var(--bad-soft);color:var(--bad);border:1px solid #fecaca}
+
+/* ---------- Modal ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(15,23,42,.25);max-height:90vh;overflow:auto}
+.modal h3{font-size:16.5px;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--ink-2)}
+.modal .actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:13.5px;font-weight:600;opacity:0;transition:all .25s;z-index:120;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Onboarding ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+.step{border:1px solid var(--line);border-radius:10px;padding:15px}
+.step .n{width:24px;height:24px;border-radius:99px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:9px}
+.step h4{font-size:14px;margin-bottom:4px}
+.step p{font-size:12.5px;color:var(--ink-3);margin-bottom:11px}
+
+/* ---------- Preview (client-facing document) ---------- */
+.prev-toolbar{max-width:760px;margin:0 auto 14px;display:flex;gap:9px;justify-content:flex-end}
+.paper-wrap{max-width:760px;margin:0 auto}
+.paper{background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);padding:46px 50px;min-height:600px;color:#111827;font-size:13px}
+.p-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:16px;border-bottom:3px solid var(--accent);margin-bottom:20px}
+.p-biz-name{font-size:19px;font-weight:800;letter-spacing:-.2px;color:#111827}
+.p-biz-sub{color:#4b5563;font-size:12px;margin-top:2px}
+.p-biz-contact{color:#4b5563;font-size:11.5px;margin-top:6px;line-height:1.55}
+.p-quote-meta{text-align:right;flex:none}
+.p-quote-meta .qword{font-size:22px;font-weight:800;letter-spacing:2px;color:var(--accent-dark)}
+.p-quote-meta .qrow{font-size:12px;color:#374151;margin-top:5px}
+.p-quote-meta .qrow b{color:#111827}
+.p-logo{max-height:54px;max-width:190px;object-fit:contain;margin-bottom:8px}
+.p-grid{display:flex;gap:26px;margin-bottom:22px;flex-wrap:wrap}
+.p-grid .col{min-width:200px}
+.p-label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#6b7280;margin-bottom:4px}
+.p-val{font-size:13.5px;font-weight:600;color:#111827;line-height:1.5}
+.p-items{width:100%;border-collapse:collapse;margin:6px 0 18px}
+.p-items th{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:#6b7280;text-align:left;padding:8px 8px;border-bottom:1.5px solid #d1d5db}
+.p-items td{padding:9px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top}
+.p-items .r{text-align:right;font-variant-numeric:tabular-nums}
+.p-items td.desc b{color:#111827}
+.p-items td.desc .d{color:#6b7280;font-size:11.5px;margin-top:1px}
+.p-totals{margin-left:auto;width:280px;margin-top:4px}
+.p-totals .trow{display:flex;justify-content:space-between;padding:5px 8px;font-size:12.5px;color:#374151}
+.p-totals .trow span:last-child{font-variant-numeric:tabular-nums}
+.p-totals .grand{border-top:2px solid #111827;margin-top:6px;padding-top:9px;font-size:15.5px;font-weight:800;color:#111827}
+.p-terms{margin-top:26px;padding-top:14px;border-top:1px solid #e5e7eb}
+.p-terms .p-label{margin-bottom:5px}
+.p-terms p{font-size:11.5px;color:#4b5563;line-height:1.6;white-space:pre-line}
+.p-accept{margin-top:26px;display:flex;gap:40px;font-size:11.5px;color:#374151}
+.p-accept .line{flex:1;border-top:1px solid #9ca3af;padding-top:5px}
+.p-foot{margin-top:34px;text-align:center;font-size:11px;color:#9ca3af}
+
+/* ---------- Help ---------- */
+.help-sec{margin-bottom:22px}
+.help-sec h3{font-size:15px;margin-bottom:8px}
+.help-sec p,.help-sec li{font-size:13.5px;color:var(--ink-2)}
+.help-sec ol,.help-sec ul{padding-left:22px;display:grid;gap:5px}
+kbd{background:#f1f5f9;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit;font-weight:700}
+
+/* ---------- Footer ---------- */
+footer{max-width:1080px;margin:0 auto;padding:0 20px 34px;color:var(--ink-3);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .cards-4{grid-template-columns:repeat(2,1fr)}
+  .cards-2,.qform{grid-template-columns:1fr}
+  .totals-panel{position:static}
+  .steps{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .topbar-inner{padding:0 12px;gap:10px;flex-wrap:wrap;height:auto;padding-top:8px}
+  .nav{order:3;width:100%;padding-bottom:6px}
+  .top-right{margin-left:auto}
+  main{padding:18px 12px 60px}
+  .cards-4{grid-template-columns:1fr 1fr}
+  .items-head{display:none}
+  .item-row{grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .item-row .if-name{grid-column:1/-1}
+  .item-row .if-qty{grid-column:1}
+  .item-row .if-unit{grid-column:2}
+  .item-row .if-price,.item-row .if-cost,.item-row .if-hrs{grid-column:auto}
+  .item-row .del{grid-column:2;justify-self:end}
+  .flabel{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);margin-bottom:3px}
+  .paper{padding:26px 20px}
+  .fr-2,.fr-3{grid-template-columns:1fr}
+  /* responsive tables collapse into cards */
+  table.tbl-resp,.tbl-resp tbody,.tbl-resp tr{display:block}
+  .tbl-resp thead{display:none}
+  .tbl-resp tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 12px}
+  .tbl-resp td{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;align-items:baseline;border:none;padding:6px 0;text-align:left}
+  .tbl-resp td::before{content:attr(data-label);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3);white-space:nowrap}
+  .tbl-resp td.num{text-align:right}
+  .tbl-resp td.act{grid-template-columns:auto}
+  .tbl-resp td.act::before{display:none}
+  .tbl-resp td.act > div{justify-content:flex-start}
+}
+.flabel{display:none}
+
+/* ---------- Print ---------- */
+@media print{
+  body{background:#fff}
+  .no-print{display:none !important}
+  main{padding:0;max-width:none}
+  .paper-wrap{max-width:none}
+  .paper{border:none;box-shadow:none;border-radius:0;padding:0;min-height:0}
+  @page{margin:16mm 14mm}
+}
+</style>
+</head>
+<body>
+<div class="topbar no-print" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/dashboard" aria-label="QuoteFort home">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.5 20 6v5.2c0 5-3.4 8.6-8 10.3-4.6-1.7-8-5.3-8-10.3V6l8-3.5Z" fill="#0f766e"/><path d="m8.6 11.8 2.3 2.3 4.6-4.6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      QuoteFort
+    </a>
+    <nav class="nav" id="mainnav" aria-label="Main">
+      <a href="#/dashboard">Dashboard</a>
+      <a href="#/quote/new">New Quote</a>
+      <a href="#/quotes">Quotes</a>
+      <a href="#/catalog">Services</a>
+      <a href="#/settings">Settings</a>
+      <a href="#/help">Help</a>
+    </nav>
+    <div class="top-right">
+      <span class="save-pill" id="savepill">Saved</span>
+    </div>
+  </div>
+</div>
+
+<main id="app" aria-live="polite"></main>
+
+<footer class="no-print" id="foot">
+  <span>QuoteFort v1.0.0 · Your data is stored in this browser only — keep backups via Settings → Export.</span>
+  <span>Sell with confidence. Protect the margin.</span>
+</footer>
+
+<div id="toast" role="status"></div>
+<div id="modal-root"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   QuoteFort v1.0.0 — application code
+   ============================================================ */
+var QF_VERSION = "1.0.0";
+var STORAGE_KEY = "quotefort_state_v1";
+
+/* ---------- tiny utils ---------- */
+function $(sel, el){ return (el||document).querySelector(sel); }
+function $all(sel, el){ return Array.prototype.slice.call((el||document).querySelectorAll(sel)); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function uid(){ try{ return crypto.randomUUID(); }catch(e){ return "id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9); } }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function parseNum(v){
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  if (v == null) return 0;
+  var s = String(v).replace(/[$,\s]/g, "");
+  if (s === "" || s === "-" || s === ".") return 0;
+  var n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+}
+function fmtMoney(n, dec){
+  if (n == null || !isFinite(n)) n = 0;
+  var d = (dec === undefined) ? 2 : dec;
+  var sym = (S.settings && S.settings.currency) ? S.settings.currency : "$";
+  var neg = n < 0; n = Math.abs(n);
+  var s = n.toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d});
+  return (neg ? "−" : "") + sym + s;
+}
+function fmtPct(n){ return (isFinite(n) ? (n*100) : 0).toFixed(1) + "%"; }
+function fmtHrs(h){
+  if (!h || h <= 0) return "—";
+  if (h < 1) return h.toFixed(2) + " h";
+  if (h < 10) return (Math.round(h*10)/10) + " h";
+  return Math.round(h) + " h";
+}
+function fmtDate(iso){
+  if (!iso) return "—";
+  var d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"});
+}
+function todayISO(){ var d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function addDaysISO(iso, days){ var d = new Date(iso + "T00:00:00"); d.setDate(d.getDate()+days); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+/* ---------- state ---------- */
+var S = null;          // full app state
+var draft = null;      // quote being edited (in-memory until saved)
+var draftId = null;    // null = new
+var dirty = false;
+
+function defaultSettings(){
+  return {
+    bizName:"", bizTagline:"", bizPhone:"", bizEmail:"", bizSite:"", logo:"",
+    currency:"$", currencyCode:"USD", taxRate:0, targetMargin:0.35, minJob:0,
+    quotePrefix:"QF", nextNum:1, validityDays:14,
+    payTerms:"Payment due on completion. A 50% deposit books your slot.",
+    quoteFootnote:"Prices are valid until the valid-until date shown above."
+  };
+}
+function defaultState(){ return { v:1, settings:defaultSettings(), catalog:[], quotes:[] }; }
+
+function save(){
+  if (S && S.__demo){ setPill("Demo — not saved"); return true; }
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    setPill("Saved");
+    return true;
+  }catch(e){
+    setPill("Save failed", true);
+    toast("Could not save (browser storage blocked). Use Settings → Export backup.", 5000);
+    return false;
+  }
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw){
+      var p = JSON.parse(raw);
+      if (p && p.v === 1 && p.settings && p.quotes){ return p; }
+    }
+  }catch(e){}
+  return null;
+}
+function setPill(txt, isErr){
+  var el = $("#savepill");
+  el.textContent = txt;
+  el.className = "save-pill" + (isErr ? " err" : "");
+}
+
+/* ---------- quote math (single source of truth) ---------- */
+function quoteTotals(q){
+  var st = S.settings;
+  var items = 0, cost = 0, hrs = 0;
+  (q.items||[]).forEach(function(it){
+    var qty = parseNum(it.qty), price = parseNum(it.price), c = parseNum(it.cost), h = parseNum(it.hrs);
+    items += qty * price;
+    cost  += qty * c;
+    hrs   += qty * h;
+  });
+  var discount = parseNum(q.discount), travel = parseNum(q.travel), travelCost = parseNum(q.travelCost), otherCost = parseNum(q.otherCost);
+  var revenue = items - discount + travel;
+  var totalCost = cost + travelCost + otherCost;
+  var taxRate = (q.taxRate === undefined || q.taxRate === null || q.taxRate === "") ? parseNum(st.taxRate) : parseNum(q.taxRate);
+  var tax = revenue * taxRate;
+  var total = revenue + tax;
+  var margin = revenue - totalCost;
+  var marginPct = revenue > 0 ? margin / revenue : 0;
+  var effHourly = hrs > 0 ? revenue / hrs : 0;
+  return { items:items, discount:discount, travel:travel, revenue:revenue, cost:totalCost, taxRate:taxRate, tax:tax,
+           total:total, margin:margin, marginPct:marginPct, hrs:hrs, effHourly:effHourly };
+}
+function guardrail(q){
+  var t = quoteTotals(q), target = parseNum(S.settings.targetMargin);
+  var msgs = [];
+  if (t.revenue > 0 && t.marginPct < target){
+    var need = t.cost > 0 ? t.cost / (1 - target) : 0;
+    var gap = need - t.revenue;
+    msgs.push({type:"bad", html:
+      "<div class='m-line'><span>Margin "+fmtPct(t.marginPct)+" · below your "+fmtPct(target)+" target</span><span>"+fmtMoney(t.margin)+"</span></div>"+
+      "<div class='m-tip'>To hit "+fmtPct(target)+", this quote should be about <b>"+fmtMoney(need)+"</b>"+
+      (gap>0 ? " ("+fmtMoney(gap)+" more)" : "") +
+      ". Realistic options: raise the price, trim costs, or accept the lower margin knowingly.</div>"});
+  }
+  if (t.revenue > 0 && t.marginPct >= target){
+    msgs.push({type:"ok", html:
+      "<div class='m-line'><span>Margin "+fmtPct(t.marginPct)+" · target "+fmtPct(target)+" ✓</span><span>"+fmtMoney(t.margin)+"</span></div>"});
+  }
+  if (t.revenue > 0 && t.margin < 0){
+    msgs.push({type:"bad", html:"<div class='m-tip'><b>This quote loses money.</b> Revenue is below your costs.</div>"});
+  }
+  if (S.settings.minJob > 0 && t.total > 0 && t.total < parseNum(S.settings.minJob)){
+    msgs.push({type:"warn", html:"<div class='m-line'><span>Below your minimum job ("+fmtMoney(parseNum(S.settings.minJob))+")</span></div>"});
+  }
+  return msgs;
+}
+
+/* ---------- example data ---------- */
+function exampleState(){
+  var st = defaultState();
+  st.settings = Object.assign(defaultSettings(), {
+    bizName:"ClearView Exterior Cleaning",
+    bizTagline:"Pressure washing & soft wash · Fully insured",
+    bizPhone:"(555) 014-2030", bizEmail:"hello@clearviewexample.com", bizSite:"clearviewexample.com",
+    currency:"$", taxRate:0, targetMargin:0.35, minJob:149,
+    quotePrefix:"CVE", nextNum:5, validityDays:14,
+    payTerms:"50% deposit to book your slot, balance due on completion. Checks payable to ClearView Exterior Cleaning.",
+    quoteFootnote:"Prices are valid until the valid-until date shown above. Example business data — replace with your own in Settings."
+  });
+  var today = new Date();
+  function dAgo(n){ var d = new Date(today); d.setDate(d.getDate()-n); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function cat(i, name, unit, price, cost, hrs, desc){ return {id:"exc"+i, name:name, unit:unit, price:price, cost:cost, hrs:hrs, desc:desc||""}; }
+  var catDefs = [
+    ["House soft wash","sq ft",0.35,0.09,0.0012,"Siding, soffits, exterior walls — low-pressure safe wash"],
+    ["Driveway & flatwork","sq ft",0.25,0.06,0.002,"Concrete & paver surfaces, includes post-treatment"],
+    ["Roof soft wash","sq ft",0.60,0.18,0.002,"Shingle-safe moss & algae treatment"],
+    ["Deck & patio wash","sq ft",0.45,0.15,0.006,"Wood/composite safe wash & brighten"],
+    ["Concrete sealing","sq ft",0.50,0.28,0.0025,"Clear penetrating sealer, 1 coat"],
+    ["Fence wash","lin ft",1.25,0.35,0.008,"Both sides where accessible"],
+    ["Gutter cleaning (blow-out)","lin ft",1.50,0.30,0.006,"Roofline debris removal, downspouts flushed"],
+    ["Window exteriors","pane",6.00,1.20,0.10,"Squeegee finish, screens included"],
+    ["Minimum trip charge","flat",149.00,20.00,0.75,"Applies when job total is below minimum"],
+    ["Heavy oxidation / stain add-on","sq ft",0.12,0.03,0.0008,"Extra chemical & dwell time"]
+  ];
+  st.catalog = catDefs.map(function(d, i){ return cat(i+1, d[0], d[1], d[2], d[3], d[4], d[5]); });
+  var C = {};
+  st.catalog.forEach(function(c,i){ C["c"+i] = c; });
+  function item(key, qty){ var c = C[key]; return {id:uid(), name:c.name, unit:c.unit, qty:qty, price:c.price, cost:c.cost, hrs:c.hrs}; }
+  st.quotes = [
+    { id:"exq1", num:"CVE-0001", createdAt:dAgo(21), validUntil:dAgo(7), status:"won",
+      client:{name:"Mike Torres", email:"mike.t@example.com", phone:"(555) 210-7788", address:"87 Birchwood Lane"},
+      jobName:"Deck, fence & patio refresh",
+      items:[item("c3",420), item("c5",210), item("c4",420)],
+      discount:0, travel:0, travelCost:0, otherCost:0, taxRate:0,
+      notes:"Quote includes post-wash inspection walk-through with homeowner.",
+      sentAt:dAgo(20), decidedAt:dAgo(18),
+      actual:{revenue:661.50, hrs:6.5, cost:285.00, notes:"Sealer went faster than expected."} },
+    { id:"exq2", num:"CVE-0002", createdAt:dAgo(9), validUntil:addDaysISO(dAgo(9),14), status:"sent",
+      client:{name:"Sarah Mitchell", email:"sarah.m@example.com", phone:"(555) 887-3012", address:"214 Oakridge Drive"},
+      jobName:"Driveway, house wash & gutters",
+      items:[item("c1",650), item("c0",2400), item("c6",180)],
+      discount:25, travel:0, travelCost:14, otherCost:0, taxRate:0,
+      notes:"Bundle discount applied for full-package booking.",
+      sentAt:dAgo(9), decidedAt:null, actual:null },
+    { id:"exq3", num:"CVE-0003", createdAt:dAgo(5), validUntil:addDaysISO(dAgo(5),14), status:"lost",
+      client:{name:"Janet Pool", email:"jpool@example.com", phone:"(555) 340-9921", address:"1102 Canyon Road"},
+      jobName:"Roof soft wash & gutters",
+      items:[item("c2",2800), item("c6",160)],
+      discount:0, travel:15, travelCost:15, otherCost:0, taxRate:0,
+      notes:"Went with a lower bid — flagged for follow-up next season.",
+      sentAt:dAgo(5), decidedAt:dAgo(2), actual:null },
+    { id:"exq4", num:null, createdAt:dAgo(0), validUntil:addDaysISO(dAgo(0),14), status:"draft",
+      client:{name:"Sunrise Preschool", email:"office@sunriseexample.org", phone:"(555) 118-4420", address:"45 Meadowbrook Ave"},
+      jobName:"Playground & walkway cleaning (weekend)",
+      items:[item("c1",1800), item("c8",1)],
+      discount:0, travel:0, travelCost:0, otherCost:0, taxRate:0,
+      notes:"Must be completed before Monday. Ask about quarterly contract.",
+      sentAt:null, decidedAt:null, actual:null }
+  ];
+  return st;
+}
+
+/* ---------- toast & modal ---------- */
+var toastTimer = null;
+function toast(msg, ms){
+  var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, ms||2200);
+}
+function openModal(html, onOpen){
+  var root = $("#modal-root");
+  root.innerHTML = "<div class='modal-back'><div class='modal' role='dialog' aria-modal='true'>"+html+"</div></div>";
+  var back = $(".modal-back", root);
+  back.addEventListener("mousedown", function(e){ if (e.target === back) closeModal(); });
+  document.addEventListener("keydown", escClose);
+  if (onOpen) onOpen($(".modal", root));
+}
+function escClose(e){ if (e.key === "Escape") closeModal(); }
+function closeModal(){
+  $("#modal-root").innerHTML = "";
+  document.removeEventListener("keydown", escClose);
+}
+function confirmModal(title, body, yesLabel, onYes, danger){
+  openModal(
+    "<h3>"+esc(title)+"</h3><p>"+body+"</p>"+
+    "<div class='actions'><button class='btn btn-ghost' data-x='no'>Cancel</button>"+
+    "<button class='btn "+(danger?"btn-danger":"btn-primary")+"' data-x='yes'>"+esc(yesLabel)+"</button></div>",
+    function(m){
+      $("[data-x=no]", m).addEventListener("click", closeModal);
+      $("[data-x=yes]", m).addEventListener("click", function(){ closeModal(); onYes(); });
+      $("[data-x=yes]", m).focus();
+    });
+}
+
+/* ---------- status helpers ---------- */
+var STATUS_LABEL = {draft:"Draft", sent:"Sent", won:"Won", lost:"Lost"};
+function chipHTML(st){ return "<span class='chip "+esc(st)+"'>"+(STATUS_LABEL[st]||esc(st))+"</span>"; }
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+function parseHash(){
+  var h = location.hash || "#/dashboard";
+  var parts = h.replace(/^#\//, "").split("?");          // e.g. quote/ID/preview
+  var path = parts[0].split("/").filter(Boolean);
+  var params = new URLSearchParams(parts[1] || "");
+  return { path:path, params:params };
+}
+function route(){
+  var r = parseHash();
+  dirtyGuard(function(){ renderRoute(r); });
+}
+function dirtyGuard(next){
+  if (!dirty){ next(); return; }
+  confirmModal("Leave without saving?",
+    "You have unsaved changes in this quote.", "Leave anyway", function(){ dirty = false; next(); }, true);
+}
+function renderRoute(r){
+  var p = r.path;
+  $all("#mainnav a").forEach(function(a){
+    var href = a.getAttribute("href").replace("#/","");
+    var cur = p[0] || "dashboard";
+    var isQuotesView = (cur === "quotes") || (cur === "quote" && p[1] && p[1] !== "new");
+    var isNewView = (cur === "quote" && p[1] === "new");
+    if (href === "quote/new" && isNewView) a.setAttribute("aria-current","page");
+    else if (href === "quotes" && isQuotesView) a.setAttribute("aria-current","page");
+    else if (href === cur) a.setAttribute("aria-current","page");
+    else a.removeAttribute("aria-current");
+  });
+  if (p[0]==="dashboard" || p.length===0) return viewDashboard();
+  if (p[0]==="quote" && p[1]==="new") return viewQuoteForm(null, r.params);
+  if (p[0]==="quote" && p[1] && p[2]==="edit") return viewQuoteForm(p[1], r.params);
+  if (p[0]==="quote" && p[1] && p[2]==="preview") return viewPreview(p[1], r.params);
+  if (p[0]==="quotes") return viewQuotes();
+  if (p[0]==="catalog") return viewCatalog();
+  if (p[0]==="settings") return viewSettings();
+  if (p[0]==="help") return viewHelp();
+  return viewDashboard();
+}
+window.addEventListener("hashchange", route);
+
+/* ============================================================
+   VIEW: Dashboard
+   ============================================================ */
+function viewDashboard(){
+  draft = null; dirty = false;
+  var app = $("#app");
+  var hasBiz = !!S.settings.bizName;
+  var hasCat = S.catalog.length > 0;
+  var hasQuotes = S.quotes.length > 0;
+
+  if (!hasBiz && !hasCat && !hasQuotes){
+    app.innerHTML =
+      pageHead("Welcome to QuoteFort","Your quoting and profit system. Three quick steps and you're pricing with confidence.") +
+      "<div class='card card-pad'>" +
+        "<div class='steps'>" +
+          "<div class='step'><span class='n'>1</span><h4>Set up your business</h4><p>Name, logo, tax rate, and your target margin. This is what appears on client quotes.</p><button class='btn btn-ghost btn-sm' data-go='#/settings'>Open Settings</button></div>" +
+          "<div class='step'><span class='n'>2</span><h4>Add your services</h4><p>Each service carries a price, a cost, and estimated hours — that's what powers the margin guardrail.</p><button class='btn btn-ghost btn-sm' data-go='#/catalog'>Open Services</button></div>" +
+          "<div class='step'><span class='n'>3</span><h4>Send your first quote</h4><p>Pick services, adjust quantities, and the guardrail warns you before a job goes out underpriced.</p><button class='btn btn-primary btn-sm' data-go='#/quote/new'>New Quote</button></div>" +
+        "</div>" +
+        "<p class='small muted' style='margin-top:16px'>Want to see it working first? <button class='btn btn-ghost btn-sm' data-x='example'>Load the example business</button> (replaces current data — you can reset later).</p>" +
+      "</div>";
+    bindGo(app);
+    $("[data-x=example]", app).addEventListener("click", function(){
+      confirmModal("Load example business?","This replaces any current data with a demo business (ClearView Exterior Cleaning) including sample services and quotes.","Load example",function(){ S = exampleState(); save(); route(); toast("Example loaded — explore, then reset in Settings when ready"); });
+    });
+    return;
+  }
+
+  var stats = dashboardStats();
+  var alerts = "";
+  var lowMarginWon = stats.lowMarginWon;
+  if (lowMarginWon.length){
+    alerts += "<div class='banner warn'><span>⚠</span><div><b>"+lowMarginWon.length+" job"+(lowMarginWon.length>1?"s":"")+" closed below your "+fmtPct(parseNum(S.settings.targetMargin))+" target margin.</b> Review these prices before quoting the same work again: "+
+      lowMarginWon.map(function(q){ return "<a href='#/quote/"+q.id+"/edit'>"+esc(q.client.name||"Untitled")+" ("+fmtPct(quoteTotals(q).marginPct)+")</a>"; }).join(", ")+".</div></div>";
+  }
+  var sentAging = stats.sentOld;
+  if (sentAging.length){
+    alerts += "<div class='banner warn'><span>⏳</span><div><b>"+sentAging.length+" quote"+(sentAging.length>1?"s":"")+" sent 5+ days ago with no reply.</b> A friendly follow-up closes a big share of silent quotes — see your Scripts pack. "+
+      sentAging.map(function(q){ return "<a href='#/quote/"+q.id+"/edit'>"+esc(q.client.name||"Untitled")+"</a>"; }).join(", ")+".</div></div>";
+  }
+
+  app.innerHTML =
+    pageHead("Dashboard", hasBiz ? esc(S.settings.bizName) : "Add your business name in Settings") +
+    (S.__demo ? "<div class='banner' style='background:var(--info-soft);border:1px solid #bfdbfe;color:var(--info)'><span>🎛</span><div><b>Demo mode.</b> This is example data — click around freely, nothing you do here is saved. Reload without <b>?demo=1</b> in the address bar to start fresh with your own business.</div></div>" : "") +
+    alerts +
+    "<div class='grid cards-4' style='margin-bottom:16px'>" +
+      stat("Pipeline (sent)", fmtMoney(stats.pipeline), stats.sentCount+" quote"+(stats.sentCount===1?"":"s")+" awaiting reply") +
+      stat("Won this month", fmtMoney(stats.wonThisMonth), stats.wonCount+" job"+(stats.wonCount===1?"":"s")+" closed") +
+      stat("Win rate", stats.winRate===null?"—":stats.winRate, "won vs lost quotes") +
+      stat("Avg margin (won)", stats.avgMargin===null?"—":fmtPct(stats.avgMargin), "target "+fmtPct(parseNum(S.settings.targetMargin))) +
+    "</div>" +
+    (stats.accuracyHTML ? "<div class='card card-pad' style='margin-bottom:16px'>"+stats.accuracyHTML+"</div>" : "") +
+    "<div class='grid cards-2'>" +
+      "<div class='card'><div class='card-pad' style='display:flex;justify-content:space-between;align-items:center'><h3 style='margin:0'>Recent quotes</h3><a class='btn btn-ghost btn-sm' href='#/quotes'>View all</a></div>" +
+        (stats.recent.length ? "<div style='overflow-x:auto'><table class='tbl tbl-resp'><thead><tr><th>Client</th><th>Job</th><th class='num'>Total</th><th class='num'>Margin</th><th>Status</th></tr></thead><tbody>" +
+          stats.recent.map(function(q){ var t = quoteTotals(q);
+            return "<tr onclick=\"location.hash='#/quote/"+q.id+"/edit'\" style='cursor:pointer'>"+
+              "<td data-label='Client'>"+esc(q.client.name||"—")+"</td>"+
+              "<td data-label='Job'>"+esc(q.jobName||"—")+"</td>"+
+              "<td class='num' data-label='Total'>"+fmtMoney(t.total)+"</td>"+
+              "<td class='num' data-label='Margin'>"+(t.revenue>0?fmtPct(t.marginPct):"—")+"</td>"+
+              "<td data-label='Status'>"+chipHTML(q.status)+"</td></tr>";
+          }).join("") + "</tbody></table></div>"
+        :
+        "<div class='empty'><div class='ico'>📄</div><h3>No quotes yet</h3><p>Create your first quote — it takes about two minutes with a catalog in place.</p><button class='btn btn-primary' data-go='#/quote/new'>New Quote</button></div>") +
+      "</div>" +
+      "<div class='card card-pad'>" +
+        "<h3>Quick actions</h3>" +
+        "<div class='grid' style='gap:9px'>" +
+          "<button class='btn btn-primary' data-go='#/quote/new'>＋ New quote</button>" +
+          "<button class='btn btn-ghost' data-go='#/catalog'>Manage services &amp; prices</button>" +
+          "<button class='btn btn-ghost' data-go='#/settings'>Business settings</button>" +
+          "<button class='btn btn-ghost' data-go='#/help'>How QuoteFort works</button>" +
+        "</div>" +
+        "<div class='tot-note'>Tip: mark sent quotes as <b>Won</b> and enter actual hours &amp; costs — that's how QuoteFort shows you which prices to raise.</div>" +
+      "</div>" +
+    "</div>";
+  bindGo(app);
+}
+
+function dashboardStats(){
+  var now = new Date(); var thisMonth = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  var pipeline=0, sentCount=0, wonThisMonth=0, wonCount=0, lostCount=0, margins=[];
+  var lowMarginWon=[], sentOld=[];
+  var target = parseNum(S.settings.targetMargin);
+  S.quotes.forEach(function(q){
+    var t = quoteTotals(q);
+    if (q.status==="sent"){ sentCount++; pipeline += t.total; if (q.sentAt && daysAgo(q.sentAt) >= 5) sentOld.push(q); }
+    if (q.status==="won"){ wonCount++; if (q.decidedAt && q.decidedAt.slice(0,7)===thisMonth) wonThisMonth += t.total; if (t.revenue>0) margins.push(t.marginPct); if (t.revenue>0 && t.marginPct < target) lowMarginWon.push(q); }
+    if (q.status==="lost") lostCount++;
+  });
+  var recent = S.quotes.slice().sort(function(a,b){ return (b.createdAt||"").localeCompare(a.createdAt||""); }).slice(0,6);
+  var wr = (wonCount+lostCount)>0 ? (wonCount/(wonCount+lostCount)*100).toFixed(0)+"%" : null;
+  var avgM = margins.length ? margins.reduce(function(a,b){return a+b;},0)/margins.length : null;
+  // accuracy from actuals
+  var accuracyHTML = "";
+  var withActuals = S.quotes.filter(function(q){ return q.status==="won" && q.actual; });
+  if (withActuals.length){
+    var rows = withActuals.map(function(q){
+      var t = quoteTotals(q);
+      var am = q.actual.revenue>0 ? (q.actual.revenue - q.actual.cost)/q.actual.revenue : 0;
+      var ae = t.revenue>0 ? t.marginPct : 0;
+      var diff = am - ae;
+      return "<tr><td data-label='Job'>"+esc(q.jobName||q.client.name||"—")+"</td>"+
+        "<td class='num' data-label='Quoted margin'>"+fmtPct(ae)+"</td>"+
+        "<td class='num' data-label='Actual margin'>"+fmtPct(am)+"</td>"+
+        "<td class='num' data-label='Difference'>"+(diff>=0?"+":"")+fmtPct(diff)+"</td></tr>";
+    }).join("");
+    accuracyHTML = "<h3>Quoted vs. actual margin</h3><div style='overflow-x:auto'><table class='tbl tbl-resp'><thead><tr><th>Job</th><th class='num'>Quoted margin</th><th class='num'>Actual margin</th><th class='num'>Difference</th></tr></thead><tbody>"+rows+"</tbody></table></div>"+
+      "<p class='small muted' style='margin-top:8px'>If actual margins keep landing below quoted ones, your costs or time estimates are off — adjust service costs in Services.</p>";
+  }
+  return { pipeline:pipeline, sentCount:sentCount, wonThisMonth:wonThisMonth, wonCount:wonCount, lostCount:lostCount,
+           winRate:wr, avgMargin:avgM, recent:recent, lowMarginWon:lowMarginWon, sentOld:sentOld, accuracyHTML:accuracyHTML };
+}
+function daysAgo(iso){
+  var d = new Date(iso+"T00:00:00"), n = new Date(); n.setHours(0,0,0,0);
+  return Math.round((n-d)/86400000);
+}
+function stat(label, value, hint){
+  return "<div class='card stat'><div class='label'>"+esc(label)+"</div><div class='value'>"+esc(value)+"</div><div class='hint'>"+esc(hint)+"</div></div>";
+}
+function pageHead(title, sub){
+  return "<div class='page-head'><div><h1>"+esc(title)+"</h1>"+(sub?"<div class='sub'>"+esc(sub)+"</div>":"")+"</div><div id='ph-actions'></div></div>";
+}
+function bindGo(root){
+  $all("[data-go]", root).forEach(function(b){ b.addEventListener("click", function(){ location.hash = b.getAttribute("data-go"); }); });
+}
+
+/* ============================================================
+   VIEW: Quote form (new / edit)
+   ============================================================ */
+var UNITS = ["sq ft","lin ft","pane","hour","day","each","flat"];
+function viewQuoteForm(id, params){
+  var app = $("#app");
+  draftId = id || null;
+  if (draftId){
+    var q = S.quotes.find(function(x){ return x.id === draftId; });
+    if (!q){ location.hash = "#/quotes"; return; }
+    draft = clone(q);
+  } else {
+    if (!draft || draft.__new !== true || !dirty){
+      draft = blankQuote();
+    }
+  }
+  renderQuoteForm();
+}
+function blankQuote(){
+  return { __new:true, id:null, num:null, createdAt:todayISO(), validUntil:addDaysISO(todayISO(), parseNum(S.settings.validityDays)||14),
+    status:"draft", client:{name:"",email:"",phone:"",address:""}, jobName:"",
+    items:[], discount:0, travel:0, travelCost:0, otherCost:0, taxRate:S.settings.taxRate,
+    notes:"", sentAt:null, decidedAt:null, actual:null };
+}
+function itemRowHTML(it, idx){
+  return "<div class='item-row' data-idx='"+idx+"'>" +
+    "<div class='if-name'><span class='flabel'>Service / description</span><input type='text' data-f='name' value=\""+esc(it.name)+"\" placeholder='Service description'></div>" +
+    "<div class='if-qty'><span class='flabel'>Qty</span><input type='text' inputmode='decimal' data-f='qty' value='"+esc(it.qty)+"'></div>" +
+    "<div class='if-unit'><span class='flabel'>Unit</span><select data-f='unit'>"+UNITS.map(function(u){ return "<option"+(it.unit===u?" selected":"")+">"+u+"</option>"; }).join("")+"</select></div>" +
+    "<div class='if-price'><span class='flabel'>Price / unit</span><input type='text' inputmode='decimal' data-f='price' value='"+esc(it.price)+"'></div>" +
+    "<div class='if-cost'><span class='flabel'>Cost / unit</span><input type='text' inputmode='decimal' data-f='cost' value='"+esc(it.cost)+"' title='Your cost per unit — powers the margin guardrail'></div>" +
+    "<div class='if-hrs'><span class='flabel'>Hrs / unit</span><input type='text' inputmode='decimal' data-f='hrs' value='"+esc(it.hrs)+"' title='Estimated hours per unit — powers effective hourly rate'></div>" +
+    "<button class='del' title='Remove line' aria-label='Remove line' data-x='delitem'>×</button>" +
+  "</div>";
+}
+function renderQuoteForm(){
+  var app = $("#app");
+  var q = draft;
+  var isNew = !draftId;
+  var catOptions = S.catalog.map(function(c){
+    return "<option value='"+c.id+"'>"+esc(c.name)+" — "+fmtMoney(c.price)+"/"+esc(c.unit)+"</option>";
+  }).join("");
+  var totals = quoteTotals(q);
+  var g = guardrail(q);
+
+  app.innerHTML =
+    "<div class='page-head'><div><h1>"+(isNew?"New quote":"Edit quote"+(q.num?" "+esc(q.num):" (draft)"))+"</h1>"+
+    "<div class='sub'>Fill in the client, pick services, watch the margin guardrail — then save and print.</div></div>"+
+    "<div style='display:flex;gap:8px;flex-wrap:wrap'>" +
+      (q.num ? "<a class='btn btn-ghost' href='#/quote/"+q.id+"/preview'>Preview &amp; print</a>" : "") +
+      "<button class='btn btn-ghost' data-x='cancel'>Cancel</button>" +
+      "<button class='btn btn-primary' data-x='save'>Save quote</button>" +
+    "</div></div>" +
+    "<div id='form-errors'></div>" +
+    "<div class='qform'>" +
+      "<div>" +
+        "<div class='card card-pad' style='margin-bottom:16px'>" +
+          "<h3>Client &amp; job</h3>" +
+          "<div class='field-row fr-2'>" +
+            "<div><label class='f'>Client name <span class='opt'>(or business)</span></label><input type='text' data-qf='client.name' value=\""+esc(q.client.name)+"\" placeholder='e.g. Mike Torres'></div>" +
+            "<div><label class='f'>Job name <span class='opt'>(shown on quote)</span></label><input type='text' data-qf='jobName' value=\""+esc(q.jobName)+"\" placeholder='e.g. Driveway & house wash'></div>" +
+            "<div><label class='f'>Phone <span class='opt'>(optional)</span></label><input type='tel' data-qf='client.phone' value=\""+esc(q.client.phone)+"\"></div>" +
+            "<div><label class='f'>Email <span class='opt'>(optional)</span></label><input type='email' data-qf='client.email' value=\""+esc(q.client.email)+"\"></div>" +
+            "<div style='grid-column:1/-1'><label class='f'>Job address <span class='opt'>(optional)</span></label><input type='text' data-qf='client.address' value=\""+esc(q.client.address)+"\"></div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='card card-pad'>" +
+          "<h3>Line items</h3>" +
+          "<div class='items-head'><span>Service</span><span>Qty</span><span>Unit</span><span>Price/unit</span><span>Cost/unit</span><span>Hrs/unit</span><span></span></div>" +
+          "<div id='items-list'></div>" +
+          "<div class='item-add'>" +
+            (S.catalog.length ?
+              "<select id='cat-pick' style='max-width:290px'><option value=''>Add from catalog…</option>"+catOptions+"</select>"+
+              "<button class='btn btn-ghost btn-sm' data-x='addcat'>＋ Add service</button>" :
+              "<span class='small muted'>No services in your catalog yet — <a href='#/catalog'>add some</a> for one-click quoting.</span>") +
+            "<button class='btn btn-ghost btn-sm' data-x='addcustom'>＋ Custom line</button>" +
+          "</div>" +
+          "<div class='field-row fr-3' style='margin-top:16px'>" +
+            "<div><label class='f'>Discount <span class='opt'>("+fmtMoney(0).replace(/[\d.,]/g,"")+" amount)</span></label><input type='text' inputmode='decimal' data-qf='discount' value='"+esc(q.discount)+"'></div>" +
+            "<div><label class='f'>Travel / trip fee <span class='opt'>(charged)</span></label><input type='text' inputmode='decimal' data-qf='travel' value='"+esc(q.travel)+"'></div>" +
+            "<div><label class='f'>Travel cost to you <span class='opt'>(optional)</span></label><input type='text' inputmode='decimal' data-qf='travelCost' value='"+esc(q.travelCost)+"'></div>" +
+            "<div><label class='f'>Other job costs <span class='opt'>(disposal, rental…)</span></label><input type='text' inputmode='decimal' data-qf='otherCost' value='"+esc(q.otherCost)+"'></div>" +
+            "<div><label class='f'>Tax rate % <span class='opt'>(overrides default)</span></label><input type='text' inputmode='decimal' data-qf='taxRate' value='"+esc(q.taxRate)+"'></div>" +
+            "<div><label class='f'>Valid until</label><input type='date' data-qf='validUntil' value='"+esc(q.validUntil)+"'></div>" +
+          "</div>" +
+          "<div style='margin-top:14px'><label class='f'>Notes on quote <span class='opt'>(optional)</span></label><textarea data-qf='notes' placeholder='Anything the client should know — access, scheduling, what's included…'>"+esc(q.notes)+"</textarea></div>" +
+        "</div>" +
+      "</div>" +
+      "<div class='totals-panel'><div class='card card-pad' id='totals-card'></div></div>" +
+    "</div>";
+
+  renderItems();
+  updateTotals();
+  bindQuoteForm();
+}
+function updateTotals(){
+  var card = $("#totals-card");
+  if (!card || !draft) return;
+  var t = quoteTotals(draft);
+  var g = guardrail(draft);
+  var gHTML = g.map(function(m){ return "<div class='margin-box "+m.type+"'>"+m.html+"</div>"; }).join("");
+  card.innerHTML =
+    "<h3>Live numbers</h3>" +
+    "<div class='tot-row'><span>Line items</span><span class='num'>"+fmtMoney(t.items)+"</span></div>" +
+    (t.discount>0 ? "<div class='tot-row'><span>Discount</span><span class='num'>−"+fmtMoney(t.discount)+"</span></div>" : "") +
+    (t.travel>0 ? "<div class='tot-row'><span>Travel fee</span><span class='num'>+"+fmtMoney(t.travel)+"</span></div>" : "") +
+    "<div class='tot-row'><span>Revenue</span><span class='num'>"+fmtMoney(t.revenue)+"</span></div>" +
+    "<div class='tot-row muted'><span>Your costs (est.)</span><span class='num'>−"+fmtMoney(t.cost)+"</span></div>" +
+    "<div class='tot-row muted'><span>Est. hours</span><span class='num'>"+fmtHrs(t.hrs)+"</span></div>" +
+    "<div class='tot-row muted'><span>Effective hourly</span><span class='num'>"+(t.effHourly>0? fmtMoney(t.effHourly,0)+"/h" : "—")+"</span></div>" +
+    (t.taxRate>0 ? "<div class='tot-row muted'><span>Tax ("+fmtPct(t.taxRate)+")</span><span class='num'>+"+fmtMoney(t.tax)+"</span></div>" : "") +
+    "<div class='tot-row big'><span>Client pays</span><span class='num'>"+fmtMoney(t.total)+"</span></div>" +
+    gHTML +
+    "<div class='tot-note'>Guardrail target: margin ≥ "+fmtPct(parseNum(S.settings.targetMargin))+" (change in Settings). Cost/unit and hrs/unit come from your catalog — override per line when a job differs.</div>";
+
+  // wire field captures (once, after render)
+  var app = $("#app");
+  $all("[data-qf]", app).forEach(function(el){
+    if (el._bound) return; el._bound = true;
+    el.addEventListener("input", onQField);
+  });
+  $all("#items-list [data-f]", app).forEach(function(el){
+    if (el._bound) return; el._bound = true;
+    el.addEventListener("input", onItemField);
+    el.addEventListener("change", onItemField);
+  });
+  $all("[data-x=delitem]", app).forEach(function(b){
+    if (b._bound) return; b._bound = true;
+    b.addEventListener("click", function(){
+      var row = b.closest(".item-row");
+      draft.items.splice(parseInt(row.getAttribute("data-idx"),10), 1);
+      dirty = true; renderItems(); updateTotals();
+    });
+  });
+}
+function onQField(e){
+  var el = e.target, f = el.getAttribute("data-qf");
+  var v = el.value;
+  if (["discount","travel","travelCost","otherCost","taxRate"].indexOf(f) >= 0) v = parseNum(el.value);
+  setPath(draft, f, v);
+  el.classList.remove("invalid");
+  dirty = true;
+  if (f === "taxRate" || f === "discount" || f === "travel" || f === "travelCost" || f === "otherCost") updateTotals();
+}
+function onItemField(e){
+  var el = e.target;
+  var row = el.closest(".item-row");
+  var idx = parseInt(row.getAttribute("data-idx"),10);
+  var f = el.getAttribute("data-f");
+  draft.items[idx][f] = (f==="unit") ? el.value : ((["qty","price","cost","hrs"].indexOf(f)>=0) ? parseNum(el.value) : el.value);
+  el.classList.remove("invalid");
+  dirty = true;
+  if (f !== "name") updateTotals(); // name change doesn't affect totals
+}
+function setPath(obj, path, val){
+  var parts = path.split(".");
+  var o = obj;
+  for (var i=0;i<parts.length-1;i++){ o = o[parts[i]]; }
+  o[parts[parts.length-1]] = val;
+}
+function renderItems(){
+  var list = $("#items-list");
+  list.innerHTML = draft.items.length
+    ? draft.items.map(itemRowHTML).join("")
+    : "<div class='empty' style='padding:22px'><p style='margin-bottom:0'>No line items yet. Add from your service catalog or create a custom line.</p></div>";
+  $all("[data-f]", list).forEach(function(el){
+    el.addEventListener("input", onItemField);
+    el.addEventListener("change", onItemField);
+  });
+  $all("[data-x=delitem]", list).forEach(function(b){
+    b.addEventListener("click", function(){
+      var row = b.closest(".item-row");
+      draft.items.splice(parseInt(row.getAttribute("data-idx"),10), 1);
+      dirty = true; renderItems(); updateTotals();
+    });
+  });
+}
+function validateQuote(q){
+  var errs = [];
+  if (!q.client.name.trim() && !q.jobName.trim()) errs.push(["client.name", "Give the quote a client name or a job name."]);
+  if (!q.items.length) errs.push(["items", "Add at least one line item."]);
+  q.items.forEach(function(it, i){
+    if (!String(it.name||"").trim()) errs.push(["item-"+i+"-name", "Line "+(i+1)+" needs a description."]);
+    if (!(parseNum(it.qty) > 0)) errs.push(["item-"+i+"-qty", "Line "+(i+1)+" needs a quantity above 0."]);
+    if (parseNum(it.price) < 0) errs.push(["item-"+i+"-price", "Line "+(i+1)+" price can't be negative."]);
+  });
+  return errs;
+}
+function bindQuoteForm(){
+  var app = $("#app");
+  $("[data-x=cancel]", app).addEventListener("click", function(){
+    dirty = false;
+    location.hash = draftId ? "#/quote/"+draftId+"/preview" : "#/quotes";
+  });
+  $("[data-x=save]", app).addEventListener("click", saveDraft);
+  var addCat = $("[data-x=addcat]", app);
+  if (addCat) addCat.addEventListener("click", function(){
+    var sel = $("#cat-pick");
+    if (!sel.value) return;
+    var c = S.catalog.find(function(x){ return x.id === sel.value; });
+    if (!c) return;
+    draft.items.push({id:uid(), name:c.name, unit:c.unit, qty:1, price:c.price, cost:c.cost, hrs:c.hrs});
+    sel.value = ""; dirty = true; renderItems(); updateTotals();
+  });
+  $("[data-x=addcustom]", app).addEventListener("click", function(){
+    draft.items.push({id:uid(), name:"", unit:"each", qty:1, price:0, cost:0, hrs:0});
+    dirty = true; renderItems(); updateTotals();
+    var rows = $all("#items-list .item-row");
+    if (rows.length){ var inp = $("input[data-f=name]", rows[rows.length-1]); if (inp) inp.focus(); }
+  });
+}
+function saveDraft(){
+  var errs = validateQuote(draft);
+  if (errs.length){
+    $("#form-errors").innerHTML = "<div class='banner err'><span>✕</span><div><b>Almost there:</b> "+errs.map(function(e){ return esc(e[1]); }).join(" · ")+"</div></div>";
+    toast("Fix the highlighted issues first");
+    // mark invalid fields
+    errs.forEach(function(e){
+      if (e[0].indexOf("item-")===0){
+        var parts = e[0].split("-"); var i = parts[1], f = parts[2];
+        var row = $all("#items-list .item-row")[parseInt(i,10)];
+        if (row){ var el = $("input[data-f="+f+"]", row); if (el){ el.classList.add("invalid"); el.focus(); } }
+      } else if (e[0]==="client.name"){
+        var el2 = $("[data-qf=client.name]"); if (el2){ el2.classList.add("invalid"); el2.focus(); }
+      }
+    });
+    return;
+  }
+  delete draft.__new;
+  if (!draft.id){ draft.id = uid(); }
+  var now = todayISO();
+  if (!draft.num){
+    var prefix = S.settings.quotePrefix || "QF";
+    var n = parseNum(S.settings.nextNum) || 1;
+    draft.num = prefix + "-" + String(n).padStart(4,"0");
+    S.settings.nextNum = n + 1;
+  }
+  if (draft.status === "sent" && !draft.sentAt) draft.sentAt = now;
+  if ((draft.status === "won" || draft.status === "lost") && !draft.decidedAt) draft.decidedAt = now;
+  var ix = S.quotes.findIndex(function(x){ return x.id === draft.id; });
+  if (ix >= 0) S.quotes[ix] = clone(draft); else S.quotes.push(clone(draft));
+  dirty = false;
+  save();
+  toast("Quote "+draft.num+" saved");
+  location.hash = "#/quote/"+draft.id+"/preview";
+}
+
+/* ============================================================
+   VIEW: Quotes list
+   ============================================================ */
+function viewQuotes(){
+  draft = null; dirty = false;
+  var app = $("#app");
+  var list = S.quotes.slice().sort(function(a,b){ return (b.createdAt||"").localeCompare(a.createdAt||""); });
+  app.innerHTML =
+    pageHead("Quotes", list.length+" quote"+(list.length===1?"":"s")+" · "+fmtMoney(S.quotes.reduce(function(a,q){ a += quoteTotals(q).total; return a; },0))+" total value") +
+    "<div id='ph-slot'></div>" +
+    (list.length ?
+      "<div class='card'><div style='overflow-x:auto'><table class='tbl tbl-resp'><thead><tr>"+
+      "<th>Client</th><th>Job</th><th>Quote #</th><th class='num'>Total</th><th class='num'>Margin</th><th>Status</th><th></th></tr></thead><tbody>" +
+      list.map(function(q){
+        var t = quoteTotals(q);
+        var below = t.revenue>0 && t.marginPct < parseNum(S.settings.targetMargin);
+        return "<tr>"+
+          "<td data-label='Client'><div><b>"+esc(q.client.name||"—")+"</b><br><span class='small muted'>"+fmtDate(q.createdAt)+"</span></div></td>"+
+          "<td data-label='Job'>"+esc(q.jobName||"—")+"</td>"+
+          "<td data-label='Quote #'>"+esc(q.num||"—")+"</td>"+
+          "<td class='num' data-label='Total'>"+fmtMoney(t.total)+"</td>"+
+          "<td class='num' data-label='Margin'>"+(t.revenue>0?"<span"+(below?" style='color:var(--bad);font-weight:700'":"")+">"+fmtPct(t.marginPct)+"</span>":"—")+"</td>"+
+          "<td data-label='Status'>"+statusSelectHTML(q)+"</td>"+
+          "<td class='act' data-label='Actions'>"+quoteActionsHTML(q)+"</td>"+
+        "</tr>";
+      }).join("") + "</tbody></table></div></div>"
+      :
+      "<div class='card'><div class='empty'><div class='ico'>🧾</div><h3>No quotes yet</h3><p>Quotes you create live here with their status — Draft, Sent, Won, Lost — so you always know what's pending and what your win rate looks like.</p><button class='btn btn-primary' data-go='#/quote/new'>Create your first quote</button></div></div>");
+  bindGo(app);
+  bindStatusControls(app);
+}
+function statusSelectHTML(q){
+  return "<select data-status='"+q.id+"' aria-label='Quote status' style='padding:5px 8px;font-size:12.5px;width:auto'>"+
+    ["draft","sent","won","lost"].map(function(s){ return "<option value='"+s+"'"+(q.status===s?" selected":"")+">"+STATUS_LABEL[s]+"</option>"; }).join("")+
+  "</select>";
+}
+function quoteActionsHTML(q){
+  return "<div style='display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end'>"+
+    "<a class='btn btn-ghost btn-sm' href='#/quote/"+q.id+"/preview'>Open</a>"+
+    "<a class='btn btn-ghost btn-sm' href='#/quote/"+q.id+"/edit'>Edit</a>"+
+    "<button class='btn btn-ghost btn-sm' data-x='dup' data-id='"+q.id+"'>Duplicate</button>"+
+    "<button class='btn btn-danger btn-sm' data-x='del' data-id='"+q.id+"'>Delete</button>"+
+  "</div>";
+}
+function bindStatusControls(root){
+  $all("[data-status]", root).forEach(function(sel){
+    sel.addEventListener("change", function(){
+      var id = sel.getAttribute("data-status");
+      var q = S.quotes.find(function(x){ return x.id === id; });
+      if (!q) return;
+      var newStatus = sel.value;
+      if (newStatus === "won" && q.status !== "won"){
+        openActualsModal(q, function(actual){
+          q.status = "won";
+          q.actual = actual;
+          if (!q.decidedAt) q.decidedAt = todayISO();
+          save(); route();
+          toast("Marked won — actuals recorded");
+        });
+      } else {
+        q.status = newStatus;
+        if (newStatus === "sent" && !q.sentAt) q.sentAt = todayISO();
+        if ((newStatus === "lost") && !q.decidedAt) q.decidedAt = todayISO();
+        save(); route();
+      }
+    });
+  });
+  $all("[data-x=dup]", root).forEach(function(b){
+    b.addEventListener("click", function(){
+      var q = S.quotes.find(function(x){ return x.id === b.getAttribute("data-id"); });
+      if (!q) return;
+      var copy = clone(q);
+      copy.id = uid(); copy.num = null; copy.status = "draft"; copy.createdAt = todayISO();
+      copy.sentAt = null; copy.decidedAt = null; copy.actual = null;
+      copy.client.name = copy.client.name;
+      S.quotes.push(copy); save(); route(); toast("Duplicated as draft — number assigned on save");
+    });
+  });
+  $all("[data-x=del]", root).forEach(function(b){
+    b.addEventListener("click", function(){
+      var id = b.getAttribute("data-id");
+      var q = S.quotes.find(function(x){ return x.id === id; });
+      confirmModal("Delete this quote?", "“"+esc((q&&q.client.name)||"Untitled")+"” will be removed permanently. Consider marking it Lost instead to keep your win-rate honest.", "Delete", function(){
+        S.quotes = S.quotes.filter(function(x){ return x.id !== id; });
+        save(); route(); toast("Quote deleted");
+      }, true);
+    });
+  });
+}
+function openActualsModal(q, onDone){
+  var t = quoteTotals(q);
+  openModal(
+    "<h3>Nice — job won! 🎉</h3><p style='margin-bottom:14px'>Enter what it <b>actually</b> took. This is how QuoteFort shows you which prices to raise.</p>"+
+    "<div class='field-row' style='gap:10px'>" +
+      "<div><label class='f'>Actual revenue collected</label><input type='text' inputmode='decimal' id='act-rev' value='"+(q.actual?esc(q.actual.revenue):t.revenue.toFixed(2))+"'></div>" +
+      "<div><label class='f'>Actual hours worked</label><input type='text' inputmode='decimal' id='act-hrs' value='"+(q.actual?esc(q.actual.hrs):(t.hrs?Math.round(t.hrs*10)/10:""))+"'></div>" +
+      "<div><label class='f'>Actual costs (materials, disposal…)</label><input type='text' inputmode='decimal' id='act-cost' value='"+(q.actual?esc(q.actual.cost):t.cost.toFixed(2))+"'></div>" +
+      "<div><label class='f'>Anything surprise you? <span class='opt'>(optional)</span></label><input type='text' id='act-notes' value='"+(q.actual?esc(q.actual.notes||""):"")+"' placeholder='e.g. sealer went faster than expected'></div>" +
+    "</div>"+
+    "<div class='actions'><button class='btn btn-ghost' data-x='skip'>Skip for now</button><button class='btn btn-primary' data-x='saveact'>Save actuals</button></div>",
+    function(m){
+      $("[data-x=skip]", m).addEventListener("click", function(){
+        closeModal(); onDone(null);
+        toast("Marked won — you can add actuals later by re-selecting Won");
+      });
+      $("[data-x=saveact]", m).addEventListener("click", function(){
+        var actual = {
+          revenue: parseNum($("#act-rev", m).value),
+          hrs: parseNum($("#act-hrs", m).value),
+          cost: parseNum($("#act-cost", m).value),
+          notes: $("#act-notes", m).value.trim()
+        };
+        closeModal(); onDone(actual);
+      });
+    });
+}
+
+/* ============================================================
+   VIEW: Preview (client-facing quote document)
+   ============================================================ */
+function viewPreview(id, params){
+  var q = S.quotes.find(function(x){ return x.id === id; });
+  var app = $("#app");
+  if (!q){ app.innerHTML = "<div class='card card-pad'>Quote not found. <a href='#/quotes'>Back to quotes</a></div>"; return; }
+  draft = null; dirty = false;
+  var st = S.settings;
+  var t = quoteTotals(q);
+  var bare = params && params.get("bare") === "1";
+
+  var logo = st.logo ? "<img class='p-logo' src='"+st.logo+"' alt=''>" : "";
+  var contactBits = [st.bizPhone, st.bizEmail, st.bizSite].filter(Boolean).map(esc).join(" · ");
+  var itemRows = q.items.map(function(it){
+    var qty = parseNum(it.qty), price = parseNum(it.price);
+    var amt = qty * price;
+    var desc = esc(it.name) + (it.unit === "flat" ? "" : "<div class='d'>"+esc(String(qty))+" "+esc(it.unit)+" × "+fmtMoney(price)+" per "+esc(it.unit)+"</div>");
+    return "<tr><td class='desc'><b>"+desc+"</b></td><td class='r'>"+esc(it.unit==="flat"?"—":String(qty))+"</td><td class='r'>"+(it.unit==="flat"?"—":fmtMoney(price))+"</td><td class='r'>"+fmtMoney(amt)+"</td></tr>";
+  }).join("");
+  var totalsRows = "";
+  if (t.discount > 0) totalsRows += "<div class='trow'><span>Discount</span><span>−"+fmtMoney(t.discount)+"</span></div>";
+  if (t.travel > 0) totalsRows += "<div class='trow'><span>Travel / trip fee</span><span>+"+fmtMoney(t.travel)+"</span></div>";
+  if (t.taxRate > 0) totalsRows += "<div class='trow'><span>Tax ("+fmtPct(t.taxRate)+")</span><span>+"+fmtMoney(t.tax)+"</span></div>";
+
+  var doc =
+    "<div class='paper' id='paper'>" +
+      "<div class='p-head'>" +
+        "<div>"+logo+"<div class='p-biz-name'>"+esc(st.bizName||"Your Business Name")+"</div>"+
+        (st.bizTagline?"<div class='p-biz-sub'>"+esc(st.bizTagline)+"</div>":"")+
+        (contactBits?"<div class='p-biz-contact'>"+contactBits+"</div>":"")+"</div>" +
+        "<div class='p-quote-meta'><div class='qword'>QUOTE</div>"+
+        "<div class='qrow'><b>"+esc(q.num||"Draft")+"</b></div>"+
+        "<div class='qrow'>Date: <b>"+fmtDate(q.createdAt)+"</b></div>"+
+        "<div class='qrow'>Valid until: <b>"+fmtDate(q.validUntil)+"</b></div></div>" +
+      "</div>" +
+      "<div class='p-grid'>" +
+        "<div class='col'><div class='p-label'>Prepared for</div><div class='p-val'>"+esc(q.client.name||"—")+
+          (q.client.address?"<br>"+esc(q.client.address):"")+
+          (q.client.phone?"<br>"+esc(q.client.phone):"")+
+          (q.client.email?"<br>"+esc(q.client.email):"")+"</div></div>" +
+        (q.jobName?"<div class='col'><div class='p-label'>Job</div><div class='p-val'>"+esc(q.jobName)+"</div></div>":"") +
+        "<div class='col'><div class='p-label'>Status</div><div class='p-val'>"+(q.status==="draft"?"Draft — not yet sent":"Quote")+"</div></div>" +
+      "</div>" +
+      "<table class='p-items'><thead><tr><th>Description</th><th class='r'>Qty</th><th class='r'>Rate</th><th class='r'>Amount</th></tr></thead><tbody>"+itemRows+"</tbody></table>" +
+      "<div class='p-totals'>" +
+        "<div class='trow'><span>Subtotal</span><span>"+fmtMoney(t.items)+"</span></div>" + totalsRows +
+        "<div class='trow grand'><span>Total</span><span>"+fmtMoney(t.total)+"</span></div>" +
+      "</div>" +
+      "<div class='p-terms'>" +
+        "<div class='p-label'>Payment &amp; terms</div>" +
+        "<p>"+esc(st.payTerms||"")+(q.notes?"\n\n"+esc(q.notes):"")+"\n\n"+esc(st.quoteFootnote||"")+"</p>" +
+      "</div>" +
+      "<div class='p-accept'><div class='line'>Accepted by (signature)</div><div class='line'>Date</div></div>" +
+      "<div class='p-foot'>"+esc(st.bizName||"")+(st.bizEmail?" · "+esc(st.bizEmail):"")+(st.bizPhone?" · "+esc(st.bizPhone):"")+" · Thank you for the opportunity.</div>" +
+    "</div>";
+
+  if (bare){
+    document.getElementById("topbar").style.display = "none";
+    document.getElementById("foot").style.display = "none";
+    app.innerHTML = "<div class='paper-wrap'>"+doc+"</div>";
+    return;
+  }
+  document.getElementById("topbar").style.display = "";
+  document.getElementById("foot").style.display = "";
+  app.innerHTML =
+    "<div class='prev-toolbar no-print'>" +
+      "<a class='btn btn-ghost' href='#/quote/"+q.id+"/edit'>← Edit quote</a>" +
+      (q.status==="draft" ? "<button class='btn btn-ghost' data-x='marksent'>Mark as sent</button>" : "") +
+      "<button class='btn btn-primary' data-x='print'>🖨 Print / Save as PDF</button>" +
+    "</div>" +
+    "<div class='paper-wrap'>"+doc+"</div>" +
+    "<p class='small muted no-print' style='text-align:center;margin-top:14px'>In the print dialog choose <b>“Save as PDF”</b> as the destination, margins “Default”, and turn headers/footers off for the cleanest result.</p>";
+  $("[data-x=print]").addEventListener("click", function(){ window.print(); });
+  var ms = $("[data-x=marksent]");
+  if (ms) ms.addEventListener("click", function(){
+    q.status = "sent"; if (!q.sentAt) q.sentAt = todayISO();
+    save(); route(); toast("Marked as sent");
+  });
+}
+
+/* ============================================================
+   VIEW: Catalog
+   ============================================================ */
+function viewCatalog(){
+  draft = null; dirty = false;
+  var app = $("#app");
+  function rowHTML(c){
+    return "<tr data-id='"+c.id+"'>"+
+      "<td data-label='Service'><input type='text' data-cf='name' value=\""+esc(c.name)+"\"></td>"+
+      "<td data-label='Unit'><select data-cf='unit'>"+UNITS.map(function(u){ return "<option"+(c.unit===u?" selected":"")+">"+u+"</option>"; }).join("")+"</select></td>"+
+      "<td data-label='Price/unit'><input type='text' inputmode='decimal' data-cf='price' value='"+esc(c.price)+"' style='max-width:110px'></td>"+
+      "<td data-label='Cost/unit'><input type='text' inputmode='decimal' data-cf='cost' value='"+esc(c.cost)+"' style='max-width:110px'></td>"+
+      "<td data-label='Hrs/unit'><input type='text' inputmode='decimal' data-cf='hrs' value='"+esc(c.hrs)+"' style='max-width:90px'></td>"+
+      "<td class='act' data-label=''><button class='btn btn-danger btn-sm' data-x='delcat'>Delete</button></td>"+
+    "</tr>";
+  }
+  app.innerHTML =
+    pageHead("Services & prices","Your reusable catalog. Price = what the client pays per unit · Cost = what it costs you per unit · Hrs = your estimated hours per unit.") +
+    "<div class='banner' style='background:var(--accent-softer);border:1px solid var(--accent-soft);color:var(--accent-dark)'><span>💡</span><div><b>Where to get your numbers:</b> your cost per unit is chemicals + fuel + wear for one unit of work. Hours come from timing real jobs — update them after each job in the tracker. The margin guardrail is only as honest as these three columns.</div></div>" +
+    "<div class='card'><div style='overflow-x:auto'><table class='tbl tbl-resp'><thead><tr><th>Service</th><th>Unit</th><th>Price/unit</th><th>Cost/unit</th><th>Hrs/unit</th><th></th></tr></thead><tbody id='cat-body'>"+
+      (S.catalog.length ? S.catalog.map(rowHTML).join("") : "") +
+    "</tbody></table></div>" +
+    (S.catalog.length===0 ? "<div class='empty'><div class='ico'>🧰</div><h3>No services yet</h3><p>Add the jobs you sell most. You only need rough numbers — they get sharper every time you record actuals.</p></div>" : "") +
+    "</div>" +
+    "<div style='display:flex;gap:9px;margin-top:14px;flex-wrap:wrap'>" +
+      "<button class='btn btn-primary' data-x='addsvc'>＋ Add service</button>" +
+      "<button class='btn btn-ghost' data-x='excat'>Load example catalog</button>" +
+      "<span class='small muted' style='align-self:center'>Changes save automatically.</span>" +
+    "</div>";
+  bindCatalog();
+}
+function bindCatalog(){
+  var app = $("#app");
+  $all("#cat-body [data-cf]", app).forEach(function(el){
+    el.addEventListener("change", function(){
+      var id = el.closest("tr").getAttribute("data-id");
+      var c = S.catalog.find(function(x){ return x.id === id; });
+      if (!c) return;
+      var f = el.getAttribute("data-cf");
+      c[f] = (["price","cost","hrs"].indexOf(f)>=0) ? parseNum(el.value) : el.value;
+      save();
+    });
+    el.addEventListener("input", function(){ if (el.tagName === "INPUT" && el.getAttribute("data-cf")==="name"){ var id = el.closest("tr").getAttribute("data-id"); var c = S.catalog.find(function(x){ return x.id === id; }); if (c){ c.name = el.value; } } });
+  });
+  $all("[data-x=delcat]", app).forEach(function(b){
+    b.addEventListener("click", function(){
+      var id = b.closest("tr").getAttribute("data-id");
+      var c = S.catalog.find(function(x){ return x.id === id; });
+      confirmModal("Delete service?", "“"+esc((c&&c.name)||"Service")+"” will be removed from your catalog. Existing quotes keep their own copies of line items.", "Delete", function(){
+        S.catalog = S.catalog.filter(function(x){ return x.id !== id; });
+        save(); route();
+      }, true);
+    });
+  });
+  $("[data-x=addsvc]", app).addEventListener("click", function(){
+    S.catalog.push({id:uid(), name:"", unit:"each", price:0, cost:0, hrs:0});
+    save(); route();
+    var rows = $all("#cat-body tr");
+    if (rows.length){ var inp = $("input[data-cf=name]", rows[rows.length-1]); if (inp) inp.focus(); }
+  });
+  $("[data-x=excat]", app).addEventListener("click", function(){
+    confirmModal("Load example catalog?","This adds 10 example exterior-cleaning services alongside your current ones (you can delete any of them).","Add examples",function(){
+      var ex = exampleState().catalog;
+      S.catalog = S.catalog.concat(ex);
+      save(); route(); toast("Example services added");
+    });
+  });
+}
+
+/* ============================================================
+   VIEW: Settings
+   ============================================================ */
+function viewSettings(){
+  draft = null; dirty = false;
+  var app = $("#app");
+  var st = S.settings;
+  app.innerHTML =
+    pageHead("Settings","Your business identity, pricing targets, and data controls. This is what appears on client quotes.") +
+    "<div class='grid cards-2'>" +
+      "<div>" +
+        "<div class='card card-pad' style='margin-bottom:16px'>" +
+          "<h3>Business identity <span class='opt small muted'>(shown on quotes)</span></h3>" +
+          "<div class='field-row fr-2'>" +
+            "<div><label class='f'>Business name</label><input type='text' data-sf='bizName' value=\""+esc(st.bizName)+"\"></div>" +
+            "<div><label class='f'>Tagline <span class='opt'>(optional)</span></label><input type='text' data-sf='bizTagline' value=\""+esc(st.bizTagline)+"\" placeholder='e.g. Pressure washing · Fully insured'></div>" +
+            "<div><label class='f'>Phone</label><input type='tel' data-sf='bizPhone' value=\""+esc(st.bizPhone)+"\"></div>" +
+            "<div><label class='f'>Email</label><input type='email' data-sf='bizEmail' value=\""+esc(st.bizEmail)+"\"></div>" +
+            "<div><label class='f'>Website <span class='opt'>(optional)</span></label><input type='text' data-sf='bizSite' value=\""+esc(st.bizSite)+"\"></div>" +
+            "<div><label class='f'>Logo <span class='opt'>(optional — appears on quotes)</span></label><input type='file' accept='image/*' id='logo-file'><div class='small muted' style='margin-top:4px'>"+(st.logo?"<img src='"+st.logo+"' alt='Current logo' style='max-height:34px;vertical-align:middle'> <button class='btn btn-ghost btn-sm' data-x='dellogo'>Remove</button>":"PNG/JPG works best")+"</div></div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='card card-pad'>" +
+          "<h3>Pricing rules</h3>" +
+          "<div class='field-row fr-2'>" +
+            "<div><label class='f'>Currency symbol</label><input type='text' data-sf='currency' value=\""+esc(st.currency)+"\" maxlength='3'></div>" +
+            "<div><label class='f'>Default tax rate % <span class='opt'>(0 if you don't charge tax)</span></label><input type='text' inputmode='decimal' data-sf='taxRate' value='"+esc(st.taxRate)+"'></div>" +
+            "<div><label class='f'>Target margin % <span class='opt'>(guardrail threshold)</span></label><input type='text' inputmode='decimal' data-sf='targetMargin' value='"+esc(Math.round(parseNum(st.targetMargin)*1000)/10)+"'></div>" +
+            "<div><label class='f'>Minimum job value <span class='opt'>(0 = none)</span></label><input type='text' inputmode='decimal' data-sf='minJob' value='"+esc(st.minJob)+"'></div>" +
+            "<div><label class='f'>Quote number prefix</label><input type='text' data-sf='quotePrefix' value=\""+esc(st.quotePrefix)+"\" maxlength='6'></div>" +
+            "<div><label class='f'>Quotes valid for (days)</label><input type='text' inputmode='numeric' data-sf='validityDays' value='"+esc(st.validityDays)+"'></div>" +
+          "</div>" +
+          "<div style='margin-top:14px'><label class='f'>Payment terms <span class='opt'>(printed on every quote)</span></label><textarea data-sf='payTerms'>"+esc(st.payTerms)+"</textarea></div>" +
+          "<div style='margin-top:10px'><label class='f'>Quote footnote</label><textarea data-sf='quoteFootnote' style='min-height:48px'>"+esc(st.quoteFootnote)+"</textarea></div>" +
+          "<div class='small muted' style='margin-top:10px'>Next quote number will be: <b>"+esc((st.quotePrefix||"QF")+"-"+String(parseNum(st.nextNum)||1).padStart(4,"0"))+"</b></div>" +
+        "</div>" +
+      "</div>" +
+      "<div>" +
+        "<div class='card card-pad' style='margin-bottom:16px'>" +
+          "<h3>Your data</h3>" +
+          "<p class='small muted' style='margin-bottom:12px'>Everything is stored in this browser on this computer — nothing is sent anywhere. If you clear browser data or switch computers, use backups.</p>" +
+          "<div class='grid' style='gap:9px'>" +
+            "<button class='btn btn-primary' data-x='export'>⬇ Export backup file (.json)</button>" +
+            "<button class='btn btn-ghost' data-x='import'>⬆ Restore from backup</button>" +
+            "<input type='file' id='import-file' accept='application/json' style='display:none'>" +
+            "<button class='btn btn-ghost' data-x='example'>Load example business</button>" +
+            "<button class='btn btn-danger' data-x='reset'>Erase all data</button>" +
+          "</div>" +
+        "</div>" +
+        "<div class='card card-pad'>" +
+          "<h3>About</h3>" +
+          "<p class='small muted'>QuoteFort v"+QF_VERSION+" — The Quote &amp; Profit System for service businesses.<br>Licensed for use within one business. See LICENSE.txt in your download for terms.</p>" +
+        "</div>" +
+      "</div>" +
+    "</div>";
+
+  $all("[data-sf]", app).forEach(function(el){
+    var f = el.getAttribute("data-sf");
+    if (f === "targetMargin") return; // handled separately
+    el.addEventListener("change", function(){
+      if (["taxRate","minJob","validityDays"].indexOf(f) >= 0) S.settings[f] = parseNum(el.value);
+      else S.settings[f] = el.value;
+      save(); toast("Settings saved");
+    });
+  });
+  $all("[data-sf=targetMargin]", app).forEach(function(el){
+    el.addEventListener("change", function(){
+      S.settings.targetMargin = Math.min(0.95, Math.max(0, parseNum(el.value)/100));
+      el.value = Math.round(S.settings.targetMargin*1000)/10;
+      save(); toast("Target margin set to "+fmtPct(S.settings.targetMargin));
+    });
+  });
+  var lf = $("#logo-file");
+  if (lf) lf.addEventListener("change", function(){
+    var file = lf.files && lf.files[0];
+    if (!file) return;
+    if (file.size > 400*1024){ toast("Logo is large ("+Math.round(file.size/1024)+"KB) — try one under 400KB for faster quotes"); }
+    var fr = new FileReader();
+    fr.onload = function(){ S.settings.logo = String(fr.result); save(); route(); toast("Logo saved"); };
+    fr.readAsDataURL(file);
+  });
+  $("[data-x=dellogo]", app).addEventListener("click", function(){ S.settings.logo = ""; save(); route(); });
+  $("[data-x=export]", app).addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(S, null, 2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "quotefort-backup-"+todayISO()+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("Backup downloaded");
+  });
+  $("[data-x=import]", app).addEventListener("click", function(){ $("#import-file").click(); });
+  $("#import-file").addEventListener("change", function(){
+    var file = this.files && this.files[0];
+    if (!file) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      try{
+        var p = JSON.parse(String(fr.result));
+        if (!p || p.v !== 1 || !p.settings || !p.quotes) throw new Error("bad file");
+        confirmModal("Restore this backup?","Your current data will be replaced by the backup file.","Restore",function(){
+          S = p; save(); route(); toast("Backup restored");
+        });
+      }catch(e){ toast("That file doesn't look like a QuoteFort backup"); }
+    };
+    fr.readAsText(file);
+  });
+  $("[data-x=example]", app).addEventListener("click", function(){
+    confirmModal("Load example business?","This replaces current data with the demo business (ClearView Exterior Cleaning).","Load example",function(){ S = exampleState(); save(); route(); toast("Example loaded"); });
+  });
+  $("[data-x=reset]", app).addEventListener("click", function(){
+    confirmModal("Erase everything?","All quotes, services and settings will be permanently deleted from this browser. Export a backup first if in doubt.","Erase all data",function(){
+      S = defaultState(); save(); route(); toast("All data erased");
+    }, true);
+  });
+}
+
+/* ============================================================
+   VIEW: Help
+   ============================================================ */
+function viewHelp(){
+  draft = null; dirty = false;
+  $("#app").innerHTML =
+    pageHead("How QuoteFort works","Five minutes here saves hours later.") +
+    "<div class='grid cards-2'>" +
+      "<div class='card card-pad'>" +
+        "<div class='help-sec'><h3>🚀 Quick start</h3><ol>" +
+          "<li><b>Settings</b> — add your business name, contact info and (optionally) a logo. Set your currency, tax rate and target margin.</li>" +
+          "<li><b>Services</b> — add the jobs you sell. For each: what you charge per unit, what it costs you per unit, and how long a unit takes.</li>" +
+          "<li><b>New Quote</b> — pick services, set quantities. The right panel shows live margin, effective hourly rate, and what the client pays.</li>" +
+          "<li><b>Save &amp; preview</b> — then <kbd>Print / Save as PDF</kbd> to produce the client-ready document.</li>" +
+          "<li><b>Track it</b> — when a quote is answered, set its status. On <b>Won</b>, enter actual hours and costs. That's the loop that sharpens your prices.</li>" +
+        "</ol></div>" +
+        "<div class='help-sec'><h3>🛡 The margin guardrail</h3><p>Before a quote leaves, QuoteFort compares <b>margin = revenue − your costs</b> against your target margin (Settings). If it's below target, you'll see the suggested minimum price for the job. You can still send a below-target quote — but it will be a decision, not an accident.</p>" +
+        "<p style='margin-top:6px'><b>Effective hourly</b> = revenue ÷ estimated hours. If it's below what you want to earn per hour, the price is wrong regardless of the margin %.</p></div>" +
+        "<div class='help-sec'><h3>🖨 Printing / PDF</h3><p>Open a saved quote → <b>Preview &amp; print</b> → <kbd>Print / Save as PDF</kbd>. In the dialog, choose “Save as PDF”, paper size A4 or Letter, margins “Default”, headers/footers <b>off</b>. Works on phones too (share → Print).</p></div>" +
+      "</div>" +
+      "<div class='card card-pad'>" +
+        "<div class='help-sec'><h3>🔒 Where your data lives</h3><p>In <b>this browser, on this computer</b> — via local storage. Nothing is uploaded anywhere. That also means: clear your browser data and it's gone. Export a backup (Settings → Export) weekly if the data matters to you.</p></div>" +
+        "<div class='help-sec'><h3>📱 Using it on your phone</h3><p>Open this same file in your phone's browser (or keep it in a cloud drive and open it there). Quotes and data are per-device — use Export/Restore to move between devices.</p></div>" +
+        "<div class='help-sec'><h3>❓ Mini-FAQ</h3><ul>" +
+          "<li><b>Where did my quote number go?</b> Drafts get their number on first save, so nothing is burned on abandoned quotes.</li>" +
+          "<li><b>Changed my catalog — did old quotes change?</b> No. Quotes store their own line items at the time they were made.</li>" +
+          "<li><b>Can I use my own currency?</b> Yes — set the symbol in Settings. Formulas don't care.</li>" +
+          "<li><b>Multiple crews?</b> Use the Business License terms (LICENSE.txt) or simply keep one file per crew.</li>" +
+          "<li><b>Something looks wrong?</b> Check Services first — the guardrail is only as good as your cost &amp; hour estimates.</li>" +
+        "</ul></div>" +
+        "<div class='help-sec'><h3>📚 Pair it with</h3><p>The <b>Pricing Playbook</b> (PDF in your download) explains how to set the numbers: cost floors, target margins, and when to raise prices. The <b>Job-Profit Tracker</b> spreadsheet is the long-term home for job history.</p></div>" +
+      "</div>" +
+    "</div>";
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+(function boot(){
+  var demoMode = false;
+  try{ demoMode = new URLSearchParams(location.search).get("demo") === "1"; }catch(e){}
+  if (demoMode){
+    S = exampleState();
+    S.__demo = true;
+    setPill("Demo — not saved");
+  } else {
+    S = load();
+    if (!S){ S = defaultState(); save(); }
+  }
+  if (!location.hash) location.hash = "#/dashboard";
+  window.addEventListener("beforeunload", function(e){
+    if (dirty){ e.preventDefault(); e.returnValue = ""; }
+  });
+  route();
+})();
+</script>
+</body>
+</html>
